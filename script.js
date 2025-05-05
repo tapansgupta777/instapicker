@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
-    const API_KEY = 'apify_api_HncaBoFrTmcPjl1cuFGju3zwbViJJW4hjcdZ';
+    const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
     
     // DOM Elements
     const fetchBtn = document.getElementById('fetch-btn');
