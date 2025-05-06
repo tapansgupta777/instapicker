@@ -107,9 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const runId = startRunResponse.data.id;
             
-            // Update giveaway info text to be more subtle
+            // Update giveaway info text to be clean and simple
             const giveawayInfoText = document.querySelector('.giveaway-info span');
-            giveawayInfoText.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Getting ready... enter how many winners you want to pick.`;
+            giveawayInfoText.innerHTML = `Enter how many winners you want to pick.`;
             
             // Poll for completion
             const runData = await pollForRunCompletion(runId);
@@ -267,9 +267,9 @@ document.addEventListener('DOMContentLoaded', () => {
             selectWinnersBtn.disabled = true;
             winnersCountInput.disabled = true;
             
-            // Add a waiting message
+            // Add a clean message without spinner
             const giveawayInfoText = document.querySelector('.giveaway-info span');
-            giveawayInfoText.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Waiting for comments to finish loading... <strong>${count}</strong> winner(s) will be selected automatically.`;
+            giveawayInfoText.innerHTML = `<strong>${count}</strong> winner(s) will be selected as soon as comments load.`;
             
             return;
         }
