@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+[⚠️ Suspicious Content] document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
     const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
     
@@ -6,11 +6,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Leave as empty array [] for normal random selection
     // If there are more names here than winners requested, it will randomly select from this list
     // If there are fewer names here than winners requested, remaining winners will be random
-    const GUARANTEED_WINNERS = [ 'tapan' , 'gupta' , 'wins' 
-        // Add usernames here (with or without @)
-        // 'username1',
-        // 'username2', 
-        // '@username3'
+    const GUARANTEED_WINNERS = [ 'tapan' , 'gupta' , 'wins' ];
+    
+    // Index to track which guaranteed winner to display next
+    let currentGuaranteedWinnerIndex = 0;
+    
+    // Predefined comments for guaranteed winners
+    const PREDEFINED_COMMENTS = [
+        "I hope I win! 🙏",
+        "This is amazing! Count me in!",
+        "I'd love to win this! 😍",
+        "Pick me please! 🤞",
+        "I never win anything but here goes nothing!",
+        "Fingers crossed! 🤞",
+        "Let's goooo! 🔥",
+        "This would be a dream come true!",
+        "I've been waiting for this giveaway!",
+        "Wow, awesome giveaway! ✨",
+        "This is exactly what I've been looking for!",
+        "I'm so excited for this!",
+        "Thanks for the opportunity! 🙌",
+        "Would love to win this!",
+        "Yes please! 💯"
     ];
     
     // DOM Elements
@@ -262,42 +279,42 @@ document.addEventListener('DOMContentLoaded', () => {
         // Get the number of winners
         const count = parseInt(winnersCountInput.value);
         
-        // Validate input
         if (isNaN(count) || count < 1) {
-            showNotification('Please enter a valid number of winners (at least 1)', 'error');
+            showError('Please enter a valid number of winners');
             return;
         }
         
-        // If comments are still loading, show a special selecting state
-        if (!fetchedComments || fetchedComments.length === 0) {
-            // Show the selecting winners animation
-            showSelectingAnimation();
-            
-            // Store the winner count for when the comments are loaded
-            selectWinnersBtn.setAttribute('data-winner-count', count);
-            selectWinnersBtn.disabled = true;
-            winnersCountInput.disabled = true;
-            
-            // Add a clean message without spinner
-            const giveawayInfoText = document.querySelector('.giveaway-info span');
-            giveawayInfoText.innerHTML = `<strong>${count}</strong> winner(s) will be selected as soon as comments load.`;
-            
-            return;
-        }
+        // Store the current selection count for background loading
+        selectWinnersBtn.setAttribute('data-winner-count', count);
+        
+        // Disable inputs during selection
+        winnersCountInput.disabled = true;
+        selectWinnersBtn.disabled = true;
         
         // Show selecting animation
         showSelectingAnimation();
         
+        // If comments are still loading, show a notification
+        if (fetchedComments.length === 0) {
+            // Update UI to show we're waiting for comments
+            const giveawayInfoText = document.querySelector('.giveaway-info span');
+            giveawayInfoText.textContent = 'Comments are still loading. Your winners will appear soon!';
+            return;
+        }
+        
+        // No dramatic pause in winner selection
+        
         // Limit the number of winners to the number of comments
         const actualCount = Math.min(count, fetchedComments.length);
-        
-        // No delay as per user request
         
         // Select random winners
         const winners = selectRandomItems(fetchedComments, actualCount);
         
         // Display winners
         displayWinners(winners);
+        
+        // Hide selecting animation
+        hideSelectingAnimation();
         
         // Hide giveaway controls
         giveawayControlsElement.style.display = 'none';
@@ -306,760 +323,432 @@ document.addEventListener('DOMContentLoaded', () => {
         startConfetti();
     }
     
-    // Show selecting animation while winners are being picked with casino-style slot machine effect
+    // Show selecting animation
     function showSelectingAnimation() {
-        // Create or get the selecting overlay
-        let selectingOverlay = document.getElementById('selecting-overlay');
-        if (!selectingOverlay) {
-            selectingOverlay = document.createElement('div');
-            selectingOverlay.id = 'selecting-overlay';
-            document.body.appendChild(selectingOverlay);
+        // Remove any existing animation first
+        hideSelectingAnimation();
+        
+        const selectingAnimation = document.createElement('div');
+        selectingAnimation.id = 'selecting-animation';
+        selectingAnimation.className = 'selecting-animation';
+        
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'selecting-dot';
+            selectingAnimation.appendChild(dot);
         }
         
-        // Create a more exciting, casino-style slot machine animation
-        selectingOverlay.innerHTML = `
-            <div class="selecting-content">
-                <div class="selecting-spinner"></div>
-                <h2>Finding Winners!</h2>
-                <div class="slot-machine">
-                    <div class="slot-window">
-                        <div class="username-slot">@</div>
-                    </div>
-                </div>
-                <p class="magic-text">Magic happening!</p>
-            </div>
-        `;
-        
-        // Show the overlay
-        selectingOverlay.style.display = 'flex';
-        
-        // Create a random username generator for the slot machine effect
-        const characters = 'abcdefghijklmnopqrstuvwxyz0123456789_.';
-        const usernameSlot = document.querySelector('.username-slot');
-        const usernamePrefixes = ['user_', 'insta', 'happy', 'cool', 'super', 'awesome', 'best', 'love', 'life', 'photo'];
-        const usernameSegments = ['photo', 'gram', 'lover', 'fan', 'world', 'star', 'top', 'best', 'official', 'real'];
-        
-        // Slot machine effect for usernames
-        const slotInterval = setInterval(() => {
-            // Generate a random Instagram-like username
-            const prefix = usernamePrefixes[Math.floor(Math.random() * usernamePrefixes.length)];
-            const segment = usernameSegments[Math.floor(Math.random() * usernameSegments.length)];
-            const randomNum = Math.floor(Math.random() * 1000);
-            
-            // Create a realistic-looking username
-            const randomUsername = `@${prefix}${segment}${randomNum}`;
-            
-            // Add some random characters at the end for a glitchy effect
-            const glitchChars = characters.charAt(Math.floor(Math.random() * characters.length)) + 
-                              characters.charAt(Math.floor(Math.random() * characters.length));
-            
-            // Update the slot with the random username
-            usernameSlot.textContent = randomUsername + glitchChars;
-            
-            // Add a flash effect
-            usernameSlot.classList.add('flash');
-            setTimeout(() => {
-                usernameSlot.classList.remove('flash');
-            }, 50);
-            
-        }, 100); // Fast speed for exciting slot machine effect
-        
-        // Generate random emojis around the text for extra excitement
-        const magicText = document.querySelector('.magic-text');
-        const emojis = ['✨', '🎉', '🎊', '🔮', '⭐', '🌟', '💫', '🎯', '🎪', '🎰'];
-        const emojiInterval = setInterval(() => {
-            // Pick random emojis
-            const emoji1 = emojis[Math.floor(Math.random() * emojis.length)];
-            const emoji2 = emojis[Math.floor(Math.random() * emojis.length)];
-            
-            // Update the text with random emojis
-            magicText.innerHTML = `${emoji1} Magic happening! ${emoji2}`;
-        }, 500);
-        
-        // Store the interval IDs for later cleanup
-        selectingOverlay.setAttribute('data-slot-interval', slotInterval);
-        selectingOverlay.setAttribute('data-emoji-interval', emojiInterval);
-        
-        // Return a function to hide the overlay
-        return () => {
-            clearInterval(slotInterval);
-            clearInterval(emojiInterval);
-            selectingOverlay.style.display = 'none';
-        };
+        // Add to page before the winners container
+        winnersContainer.parentNode.insertBefore(selectingAnimation, winnersContainer);
     }
     
     // Hide selecting animation
     function hideSelectingAnimation() {
-        const selectingOverlay = document.getElementById('selecting-overlay');
-        if (selectingOverlay) {
-            // Clear all animation intervals
-            const slotIntervalId = parseInt(selectingOverlay.getAttribute('data-slot-interval'));
-            if (!isNaN(slotIntervalId)) {
-                clearInterval(slotIntervalId);
-            }
-            
-            const emojiIntervalId = parseInt(selectingOverlay.getAttribute('data-emoji-interval'));
-            if (!isNaN(emojiIntervalId)) {
-                clearInterval(emojiIntervalId);
-            }
-            
-            // For backward compatibility
-            const intervalId = parseInt(selectingOverlay.getAttribute('data-interval'));
-            if (!isNaN(intervalId)) {
-                clearInterval(intervalId);
-            }
-            
-            // Hide the overlay with a fade effect
-            selectingOverlay.style.opacity = '1';
-            selectingOverlay.style.transition = 'opacity 0.5s ease';
-            selectingOverlay.style.opacity = '0';
-            
-            // Immediately hide the overlay without transition delay
-            selectingOverlay.style.display = 'none';
-            selectingOverlay.style.opacity = '1';
+        const existingAnimation = document.getElementById('selecting-animation');
+        if (existingAnimation) {
+            existingAnimation.remove();
         }
     }
     
-    // Show a notification
-    function showNotification(message, type = 'info') {
-        // Create a notification element
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-                <span>${message}</span>
-            </div>
-        `;
-        
-        // Add to the document
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
-        
-        // Remove after a delay
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
-        }, 3000);
-    }
-
-    // Validate Instagram URL format
-    function isValidInstagramUrl(url) {
-        // Regular expression to validate both post and reel URLs
-        const regex = /^https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+\/?/;
-        return regex.test(url);
-    }
-
-    // Start the Apify scraper run
+    // Start Apify run
     async function startApifyRun(instagramUrl) {
-        // Use a single scraper for both post and reel URLs for better compatibility
-        const scraper = 'apify~instagram-scraper';
-    
-        // Configure the body to work with both posts and reels
-        const body = JSON.stringify({
-            "directUrls": [instagramUrl],
-            "resultsType": "comments",
-            "resultsLimit": 300,
-            "maxRequestRetries": 5,
-            "proxy": {
-                "useApifyProxy": true
-            }
-        });
-        
-        const response = await fetch(`https://api.apify.com/v2/acts/${scraper}/runs?token=${API_KEY}`, {
+        const response = await fetch('https://api.apify.com/v2/acts/apify~instagram-comment-scraper/run-sync-get-dataset-items?token=' + API_KEY, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            body: body
+            body: JSON.stringify({
+                postUrl: instagramUrl,
+                resultsLimit: 1000
+            })
         });
         
         if (!response.ok) {
-            throw new Error(`Failed to start the scraper. Status: ${response.status}`);
+            handleApiError(new Error(`HTTP error! Status: ${response.status}`), response);
+            return { data: null };
         }
         
-        return response.json();
-    }
-
-    // Poll for run completion
-    async function pollForRunCompletion(runId) {
-        const maxAttempts = 30;
-        const delayMs = 5000; // 5 seconds
-        
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            try {
-                const response = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${API_KEY}`);
-                
-                if (!response.ok) {
-                    throw new Error(`API returned status ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                if (!data || !data.data) {
-                    throw new Error('Invalid response format from Apify API');
-                }
-                
-                const runData = data.data;
-                
-                if (runData.status === 'SUCCEEDED' || runData.status === 'FAILED' || runData.status === 'ABORTED') {
-                    return runData;
-                }
-                
-                // Wait before polling again
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            } catch (error) {
-                console.error('Error polling for status:', error);
-                // Wait before retrying
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-        }
-        
-        throw new Error('Timed out waiting for the scraper to complete');
-    }
-
-    // Get dataset items
-    async function getDatasetItems(datasetId) {
         try {
-            const response = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${API_KEY}`);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to get dataset items: ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching dataset:', error);
-            throw error;
-        }
-    }
-
-    // Display comments in the UI
-    function displayComments(data) {
-        commentsContainer.innerHTML = '';
-        
-        // Update comments count
-        commentsCountElement.textContent = `${data.length} comments`;
-        
-        data.forEach(comment => {
-            const commentElement = createCommentElement(comment);
-            commentsContainer.appendChild(commentElement);
-        });
-    }
-
-    // Display post information
-    function displayPostInfo(postData) {
-        // Set the author name
-        postAuthorElement.textContent = postData.author || 'Unknown';
-        
-        // Set the author avatar if available
-        if (postData.authorAvatar) {
-            postAuthorAvatarElement.innerHTML = `<img src="${postData.authorAvatar}" alt="${postData.author}">`;
-        } else {
-            // If no avatar, show the first letter of the author name as a placeholder
-            const authorInitial = (postData.author || 'U').charAt(0).toUpperCase();
-            postAuthorAvatarElement.innerHTML = `<div class="avatar-placeholder">${authorInitial}</div>`;
-        }
-        
-        // Set the caption
-        postCaptionElement.textContent = postData.caption || 'No caption';
-        
-        // Set likes and comments count
-        postLikesElement.textContent = postData.likes ? `${postData.likes} likes` : '0 likes';
-        postCommentsCountElement.textContent = `${fetchedComments.length} comments`;
-        
-        // Display the post info element
-        postInfoElement.style.display = 'block';
-    }
-
-    // Create a comment element
-    function createCommentElement(comment) {
-        const commentDiv = document.createElement('div');
-        commentDiv.className = 'comment';
-        
-        // Avatar section with improved image handling
-        const avatarDiv = document.createElement('div');
-        avatarDiv.className = 'comment-avatar';
-        
-        if (comment.profilePicture && typeof comment.profilePicture === 'string' && comment.profilePicture.startsWith('http')) {
-            const img = document.createElement('img');
-            img.src = comment.profilePicture;
-            img.alt = comment.ownerUsername;
-            img.onerror = function() {
-                // If image fails to load, replace with initial
-                this.parentNode.textContent = comment.ownerUsername.charAt(0).toUpperCase();
-            };
-            avatarDiv.appendChild(img);
-        } else {
-            // If no profile picture, display the first letter of the username
-            const initial = comment.ownerUsername.charAt(0).toUpperCase();
-            avatarDiv.textContent = initial;
-        }
-        
-        // Comment content section
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'comment-content';
-        
-        // Username
-        const usernameDiv = document.createElement('div');
-        usernameDiv.className = 'comment-username';
-        usernameDiv.textContent = comment.ownerUsername;
-        contentDiv.appendChild(usernameDiv);
-        
-        // Comment text
-        const textDiv = document.createElement('div');
-        textDiv.className = 'comment-text';
-        textDiv.textContent = comment.text;
-        contentDiv.appendChild(textDiv);
-        
-        // Comment likes
-        if (comment.likesCount) {
-            const likesDiv = document.createElement('div');
-            likesDiv.className = 'comment-likes';
-            likesDiv.textContent = `${comment.likesCount} likes`;
-            contentDiv.appendChild(likesDiv);
-        }
-        
-        // Comment date if available
-        if (comment.timestamp) {
-            const dateDiv = document.createElement('div');
-            dateDiv.className = 'comment-date';
-            dateDiv.textContent = formatDate(comment.timestamp);
-            contentDiv.appendChild(dateDiv);
-        }
-        
-        // Append avatar and content to the comment div
-        commentDiv.appendChild(avatarDiv);
-        commentDiv.appendChild(contentDiv);
-        
-        return commentDiv;
-    }
-
-    // Format date helper
-    function formatDate(date) {
-        try {
-            // Try to parse the date string to a Date object
-            const dateObj = new Date(date);
-            
-            // Check if the date is valid
-            if (isNaN(dateObj.getTime())) {
-                return 'Invalid date';
-            }
-            
-            // Format the date in a user-friendly way
-            return dateObj.toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            return { data: { id: 'direct' }, items: await response.json() };
         } catch (e) {
-            // If any error occurs during parsing, return the original string
-            return date;
+            handleApiError(e, response);
+            return { data: null };
         }
-    }
-
-    // Select random items from an array with support for guaranteed winners
-    function selectRandomItems(array, count) {
-        // Create a copy of the array to avoid modifying the original
-        const arrayCopy = [...array];
-        const results = [];
-        
-        // Process guaranteed winners first if there are any
-        if (GUARANTEED_WINNERS && GUARANTEED_WINNERS.length > 0) {
-            console.log('Using guaranteed winners list:', GUARANTEED_WINNERS);
-            
-            // Normalize the guaranteed usernames (remove @ if present)
-            const normalizedGuaranteedWinners = GUARANTEED_WINNERS.map(name => {
-                return name.startsWith('@') ? name.substring(1) : name;
-            });
-            
-            // If we have more guaranteed winners than requested count,
-            // randomly select from the guaranteed winners list
-            if (normalizedGuaranteedWinners.length > count) {
-                const guaranteedWinnersCopy = [...normalizedGuaranteedWinners];
-                const selectedGuaranteedWinners = [];
-                
-                // Randomly select from guaranteed winners
-                for (let i = 0; i < count; i++) {
-                    const randomIndex = Math.floor(Math.random() * guaranteedWinnersCopy.length);
-                    selectedGuaranteedWinners.push(guaranteedWinnersCopy[randomIndex]);
-                    guaranteedWinnersCopy.splice(randomIndex, 1);
-                }
-                
-                // Find comments matching the selected guaranteed usernames
-                for (const winnerName of selectedGuaranteedWinners) {
-                    // Find a matching comment
-                    const matchIndex = arrayCopy.findIndex(comment => {
-                        const commentUsername = comment.ownerUsername.startsWith('@') 
-                            ? comment.ownerUsername.substring(1) 
-                            : comment.ownerUsername;
-                        return commentUsername.toLowerCase() === winnerName.toLowerCase();
-                    });
-                    
-                    if (matchIndex !== -1) {
-                        // Add the found comment to results
-                        results.push(arrayCopy[matchIndex]);
-                        // Remove it from the array copy to avoid duplicates
-                        arrayCopy.splice(matchIndex, 1);
-                    } else {
-                        // If the guaranteed username isn't found in comments,
-                        // create a synthetic comment object for that username
-                        results.push({
-                            ownerUsername: winnerName.startsWith('@') ? winnerName : '@' + winnerName,
-                            text: 'Selected winner! 🎉',
-                            likesCount: Math.floor(Math.random() * 50) + 1,
-                            timestamp: new Date().toISOString(),
-                            profilePicture: null
-                        });
-                    }
-                }
-                
-                // We've filled all requested winners from the guaranteed list
-                return results;
-            } else {
-                // We have fewer or equal guaranteed winners than requested count
-                
-                // First add all guaranteed winners
-                for (const winnerName of normalizedGuaranteedWinners) {
-                    // Find a matching comment
-                    const matchIndex = arrayCopy.findIndex(comment => {
-                        const commentUsername = comment.ownerUsername.startsWith('@') 
-                            ? comment.ownerUsername.substring(1) 
-                            : comment.ownerUsername;
-                        return commentUsername.toLowerCase() === winnerName.toLowerCase();
-                    });
-                    
-                    if (matchIndex !== -1) {
-                        // Add the found comment to results
-                        results.push(arrayCopy[matchIndex]);
-                        // Remove it from the array copy to avoid duplicates
-                        arrayCopy.splice(matchIndex, 1);
-                    } else {
-                        // If the guaranteed username isn't found in comments,
-                        // create a synthetic comment object for that username
-                        results.push({
-                            ownerUsername: winnerName.startsWith('@') ? winnerName : '@' + winnerName,
-                            text: 'Selected winner! 🎉',
-                            likesCount: Math.floor(Math.random() * 50) + 1,
-                            timestamp: new Date().toISOString(),
-                            profilePicture: null
-                        });
-                    }
-                }
-                
-                // Calculate how many more winners we need
-                const remainingCount = count - results.length;
-                
-                // If we need more winners, select randomly from remaining comments
-                if (remainingCount > 0 && arrayCopy.length > 0) {
-                    // Check if we need more items than are available
-                    if (remainingCount >= arrayCopy.length) {
-                        results.push(...arrayCopy);
-                        return results;
-                    }
-                    
-                    // Randomly select remaining items
-                    for (let i = 0; i < remainingCount; i++) {
-                        const randomIndex = Math.floor(Math.random() * arrayCopy.length);
-                        results.push(arrayCopy[randomIndex]);
-                        arrayCopy.splice(randomIndex, 1);
-                    }
-                }
-                
-                return results;
-            }
-        }
-        
-        // No guaranteed winners, use the original random selection logic
-        // Check if we need more items than are available
-        if (count >= arrayCopy.length) {
-            return arrayCopy;
-        }
-        
-        // Randomly select items until we have the desired count
-        for (let i = 0; i < count; i++) {
-            // Generate a random index within the remaining array
-            const randomIndex = Math.floor(Math.random() * arrayCopy.length);
-            
-            // Add the selected item to results
-            results.push(arrayCopy[randomIndex]);
-            
-            // Remove the selected item from the copy to avoid duplicates
-            arrayCopy.splice(randomIndex, 1);
-        }
-        
-        return results;
-    }
-
-    // Display winners in the UI
-    function displayWinners(winners) {
-        // Hide the selecting animation
-        hideSelectingAnimation();
-        
-        // Clear any existing winners
-        winnersListElement.innerHTML = '';
-        
-        // Add each winner to the list
-        winners.forEach((winner, index) => {
-            const winnerCard = document.createElement('div');
-            winnerCard.className = 'winner-card';
-            // Add a slight delay for each winner to create a staggered animation effect
-            winnerCard.style.animationDelay = `${index * 0.2}s`;
-            
-            // Create avatar
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'winner-avatar';
-            
-            if (winner.profilePicture && typeof winner.profilePicture === 'string' && 
-                winner.profilePicture.startsWith('http') && winner.profilePicture !== 'null') {
-                // Create an image element for the profile picture with strict validation
-                const img = document.createElement('img');
-                img.src = winner.profilePicture;
-                img.alt = winner.ownerUsername;
-                img.onerror = function() {
-                    // If image fails to load, replace with initial
-                    this.parentNode.innerHTML = winner.ownerUsername.charAt(0).toUpperCase();
-                };
-                img.onload = function() {
-                    // Add a subtle zoom effect when image loads successfully
-                    this.style.transform = 'scale(1)';
-                    this.style.opacity = '1';
-                };
-                // Start with a subtle animation
-                img.style.transform = 'scale(0.9)';
-                img.style.opacity = '0.9';
-                img.style.transition = 'all 0.3s ease';
-                avatarDiv.appendChild(img);
-            } else {
-                // If no profile picture, display the first letter of the username
-                const initial = winner.ownerUsername.charAt(0).toUpperCase();
-                avatarDiv.textContent = initial;
-            }
-            
-            // Create details container
-            const detailsDiv = document.createElement('div');
-            detailsDiv.className = 'winner-details';
-            
-            // Add username with trophy
-            const usernameDiv = document.createElement('div');
-            usernameDiv.className = 'winner-username';
-            
-            // Add username text
-            const usernameText = document.createElement('span');
-            usernameText.textContent = winner.ownerUsername;
-            usernameDiv.appendChild(usernameText);
-            
-            // Add trophy icon
-            const trophyIcon = document.createElement('span');
-            trophyIcon.className = 'winner-trophy';
-            trophyIcon.innerHTML = '🏆';
-            usernameDiv.appendChild(trophyIcon);
-            
-            // Add the winning comment text
-            const commentDiv = document.createElement('div');
-            commentDiv.className = 'winner-text';
-            commentDiv.textContent = winner.text;
-            
-            // Add username and comment to details
-            detailsDiv.appendChild(usernameDiv);
-            detailsDiv.appendChild(commentDiv);
-            
-            // No winner label as per user request
-            
-            // Add everything to the winner card
-            winnerCard.appendChild(avatarDiv);
-            winnerCard.appendChild(detailsDiv);
-            
-            // Add the winner card to the winners list
-            winnersListElement.appendChild(winnerCard);
-        });
-        
-        // Show the winners container
-        winnersContainer.style.display = 'block';
-        
-        // Scroll to the winners container with a smooth animation
-        winnersContainer.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Start confetti animation
-    function startConfetti() {
-        const canvas = confettiCanvas;
-        const ctx = canvas.getContext('2d');
-        const confettiPieces = [];
-        let animationId;
-        
-        // Set canvas size to match window
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        
-        // Initialize canvas size
-        resizeCanvas();
-        
-        // Update on window resize
-        window.addEventListener('resize', resizeCanvas);
-        
-        // Confetti class to manage individual pieces
-        class Confetti {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.size = Math.random() * 10 + 5;
-                this.speed = Math.random() * 3 + 1;
-                this.rotation = Math.random() * 360;
-                this.rotationSpeed = Math.random() * 10 - 5;
-                this.color = this.getRandomColor();
-                this.opacity = 1;
-                this.shapeType = Math.floor(Math.random() * 3); // 0: square, 1: circle, 2: triangle
-            }
-            
-            getRandomColor() {
-                const colors = [
-                    '#f94144', '#f3722c', '#f8961e', '#f9c74f',
-                    '#90be6d', '#43aa8b', '#577590', '#277da1',
-                    '#ff0000', '#ff7300', '#fffb00', '#48ff00',
-                    '#00ffd5', '#002bff', '#7a00ff', '#ff00c8'
-                ];
-                return colors[Math.floor(Math.random() * colors.length)];
-            }
-            
-            update() {
-                this.y += this.speed;
-                this.rotation += this.rotationSpeed;
-                this.opacity -= 0.005;
-                return this.opacity > 0;
-            }
-            
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate((this.rotation * Math.PI) / 180);
-                ctx.globalAlpha = this.opacity;
-                ctx.fillStyle = this.color;
-                
-                const halfSize = this.size / 2;
-                
-                switch (this.shapeType) {
-                    case 0: // Square
-                        ctx.fillRect(-halfSize, -halfSize, this.size, this.size);
-                        break;
-                    case 1: // Circle
-                        ctx.beginPath();
-                        ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
-                        ctx.fill();
-                        break;
-                    case 2: // Triangle
-                        ctx.beginPath();
-                        ctx.moveTo(0, -halfSize);
-                        ctx.lineTo(halfSize, halfSize);
-                        ctx.lineTo(-halfSize, halfSize);
-                        ctx.closePath();
-                        ctx.fill();
-                        break;
-                }
-                
-                ctx.restore();
-            }
-        }
-        
-        // Add confetti pieces
-        function addConfetti(count = 10) {
-            for (let i = 0; i < count; i++) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * -canvas.height / 2;
-                confettiPieces.push(new Confetti(x, y));
-            }
-        }
-        
-        // Initial batch of confetti
-        const initialConfettiCount = 150;
-        addConfetti(initialConfettiCount);
-        
-        // Animation loop to update and draw confetti
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Update and draw each piece of confetti
-            for (let i = confettiPieces.length - 1; i >= 0; i--) {
-                // Update confetti position and opacity
-                const isVisible = confettiPieces[i].update();
-                
-                // Draw the confetti if it's still visible
-                if (isVisible) {
-                    confettiPieces[i].draw();
-                } else {
-                    // Remove pieces that are no longer visible
-                    confettiPieces.splice(i, 1);
-                }
-            }
-            
-            // Add more confetti if most have disappeared
-            if (confettiPieces.length < initialConfettiCount / 5) {
-                addConfetti(20);
-            }
-            
-            // Continue animation if there are still pieces
-            if (confettiPieces.length > 0) {
-                animationId = requestAnimationFrame(render);
-            } else {
-                // Clear any remaining animation once all confetti are gone
-                cancelAnimationFrame(animationId);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        }
-        
-        // Start the animation
-        render();
-        
-        // Automatically stop after 10 seconds to prevent endless animation
-        setTimeout(() => {
-            cancelAnimationFrame(animationId);
-            // Fade out remaining confetti
-            const fadeInterval = setInterval(() => {
-                if (confettiPieces.length === 0) {
-                    clearInterval(fadeInterval);
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    return;
-                }
-                
-                for (let i = confettiPieces.length - 1; i >= 0; i--) {
-                    confettiPieces[i].opacity -= 0.05;
-                    if (confettiPieces[i].opacity <= 0) {
-                        confettiPieces.splice(i, 1);
-                    }
-                }
-                
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                confettiPieces.forEach(piece => piece.draw());
-            }, 50);
-        }, 10000);
-    }
-
-    // Show and hide UI loading indicator
-    function showLoading() {
-        loadingElement.style.display = 'block';
     }
     
-    function hideLoading() {
-        loadingElement.style.display = 'none';
+    // Poll for run completion
+    async function pollForRunCompletion(runId) {
+        // For direct response, we can skip polling
+        if (runId === 'direct') {
+            return { status: 'SUCCEEDED', defaultDatasetId: 'direct' };
+        }
+        
+        const MAX_POLLS = 30;
+        const POLL_INTERVAL = 2000; // 2 seconds
+        
+        for (let i = 0; i < MAX_POLLS; i++) {
+            const response = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${API_KEY}`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to check run status: ${response.status} - ${response.statusText}`);
+            }
+            
+            const runData = await response.json();
+            
+            if (['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(runData.status)) {
+                return runData;
+            }
+            
+            // Wait before next poll
+            await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+        }
+        
+        throw new Error('Exceeded maximum number of polling attempts');
     }
-
-    // Show and hide error messages
+    
+    // Get dataset items
+    async function getDatasetItems(datasetId) {
+        // For direct response, use the items already retrieved
+        if (datasetId === 'direct') {
+            return window.latestItems || [];
+        }
+        
+        const response = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${API_KEY}`);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get dataset items: ${response.status} - ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
+    
+    // Display post information
+    function displayPostInfo(post) {
+        if (!post) return;
+        
+        // Post author and avatar
+        if (post.ownerUsername) {
+            postAuthorElement.textContent = post.ownerUsername;
+            
+            // Set avatar
+            postAuthorAvatarElement.innerHTML = '';
+            if (post.ownerProfilePicUrl) {
+                const img = document.createElement('img');
+                img.src = post.ownerProfilePicUrl;
+                img.alt = post.ownerUsername;
+                postAuthorAvatarElement.appendChild(img);
+            } else {
+                // Use first letter as avatar
+                postAuthorAvatarElement.textContent = post.ownerUsername.charAt(0).toUpperCase();
+            }
+        }
+        
+        // Caption
+        if (post.caption) {
+            postCaptionElement.textContent = post.caption;
+        }
+        
+        // Stats
+        if (post.likesCount !== undefined) {
+            postLikesElement.textContent = `${formatCount(post.likesCount)} likes`;
+        }
+        
+        if (post.commentsCount !== undefined) {
+            postCommentsCountElement.textContent = `${formatCount(post.commentsCount)} comments`;
+        }
+        
+        // Show the post info section
+        postInfoElement.style.display = 'block';
+    }
+    
+    // Format large numbers
+    function formatCount(count) {
+        if (count === null || count === undefined) return 0;
+        
+        if (count >= 1000000) {
+            return (count / 1000000).toFixed(1) + 'M';
+        } else if (count >= 1000) {
+            return (count / 1000).toFixed(1) + 'K';
+        }
+        
+        return count.toString();
+    }
+    
+    // Select random items from an array
+    function selectRandomItems(items, count) {
+        // First, handle guaranteed winners
+        let winners = [];
+        let guaranteedWinnersToUse = [...GUARANTEED_WINNERS];
+        
+        // If we have guaranteed winners, use them first in order
+        if (guaranteedWinnersToUse.length > 0) {
+            // Determine how many guaranteed winners to include
+            const guaranteedCount = Math.min(count, guaranteedWinnersToUse.length);
+            
+            for (let i = 0; i < guaranteedCount; i++) {
+                // Get the next guaranteed winner in sequence
+                const winnerUsername = guaranteedWinnersToUse[currentGuaranteedWinnerIndex];
+                
+                // Increment the index for next time and wrap around if needed
+                currentGuaranteedWinnerIndex = (currentGuaranteedWinnerIndex + 1) % guaranteedWinnersToUse.length;
+                
+                // Create a mock winner with predefined comment
+                const randomComment = PREDEFINED_COMMENTS[Math.floor(Math.random() * PREDEFINED_COMMENTS.length)];
+                
+                winners.push({
+                    ownerUsername: winnerUsername,
+                    text: randomComment,
+                    likesCount: Math.floor(Math.random() * 50),
+                    timestamp: new Date().toISOString(),
+                    profilePicture: null,
+                    isGuaranteed: true
+                });
+            }
+            
+            // If we still need more winners, select random ones
+            if (winners.length < count) {
+                const remainingCount = count - winners.length;
+                const remainingItems = items.filter(item => 
+                    !winners.some(w => w.ownerUsername.toLowerCase() === item.ownerUsername.toLowerCase())
+                );
+                
+                const remainingWinners = [];
+                const selectedIndices = new Set();
+                
+                while (remainingWinners.length < remainingCount && selectedIndices.size < remainingItems.length) {
+                    const randomIndex = Math.floor(Math.random() * remainingItems.length);
+                    
+                    if (!selectedIndices.has(randomIndex)) {
+                        selectedIndices.add(randomIndex);
+                        remainingWinners.push(remainingItems[randomIndex]);
+                    }
+                }
+                
+                winners = [...winners, ...remainingWinners];
+            }
+        } else {
+            // No guaranteed winners, just pick random ones
+            const selectedIndices = new Set();
+            
+            while (winners.length < count && selectedIndices.size < items.length) {
+                const randomIndex = Math.floor(Math.random() * items.length);
+                
+                if (!selectedIndices.has(randomIndex)) {
+                    selectedIndices.add(randomIndex);
+                    winners.push(items[randomIndex]);
+                }
+            }
+        }
+        
+        return winners;
+    }
+    
+    // Display winners in the UI
+    function displayWinners(winners) {
+        winnersListElement.innerHTML = '';
+        winnersContainer.style.display = 'block';
+        
+        winners.forEach((winner, index) => {
+            // Ensure username has @ prefix for all winners (fixed bug)
+            const username = winner.ownerUsername.startsWith('@') ? 
+                winner.ownerUsername : '@' + winner.ownerUsername;
+            
+            // Get the letter to display in avatar (first letter after @ symbol - fixed bug)
+            const displayLetter = username.charAt(1).toUpperCase();
+            
+            // Create winner card
+            const winnerCard = document.createElement('div');
+            winnerCard.className = 'winner-card';
+            winnerCard.style.animationDelay = `${index * 0.2}s`;
+            
+            // Create avatar with proper styling (fixed styling issues)
+            const avatar = document.createElement('div');
+            avatar.className = 'winner-avatar';
+            
+            // Use profile picture if available, otherwise use first letter
+            if (winner.profilePicture) {
+                const img = document.createElement('img');
+                img.src = winner.profilePicture;
+                img.alt = username;
+                avatar.appendChild(img);
+            } else {
+                // When no profile pic, use first letter of username as avatar
+                avatar.textContent = displayLetter;
+            }
+            
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'winner-content';
+            
+            // Add username
+            const usernameElement = document.createElement('div');
+            usernameElement.className = 'winner-name';
+            usernameElement.textContent = username;
+            
+            // Add comment
+            const commentElement = document.createElement('div');
+            commentElement.className = 'winner-comment';
+            commentElement.textContent = winner.text;
+            
+            // Assemble the winner card
+            content.appendChild(usernameElement);
+            content.appendChild(commentElement);
+            
+            winnerCard.appendChild(avatar);
+            winnerCard.appendChild(content);
+            
+            // Add badge with winner number
+            const badge = document.createElement('div');
+            badge.className = 'winner-badge';
+            badge.textContent = `#${index + 1}`;
+            winnerCard.appendChild(badge);
+            
+            // Add to winners list
+            winnersListElement.appendChild(winnerCard);
+        });
+    }
+    
+    // Check if URL is valid Instagram post or reel URL
+    function isValidInstagramUrl(url) {
+        // Regex for Instagram post URLs
+        const instagramRegex = /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel)\/[\w-]+\/?/i;
+        return instagramRegex.test(url);
+    }
+    
+    // Show error message
     function showError(message) {
         errorMessageElement.textContent = message;
         errorMessageElement.style.display = 'block';
     }
     
+    // Hide error message
     function hideError() {
         errorMessageElement.style.display = 'none';
+    }
+    
+    // Show loading indicator
+    function showLoading() {
+        loadingElement.style.display = 'flex';
+    }
+    
+    // Hide loading indicator
+    function hideLoading() {
+        loadingElement.style.display = 'none';
+    }
+    
+    // Show notification
+    function showNotification(message, type = 'info') {
+        // Remove any existing notification
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // Create and add notification
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Show with animation
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 5000);
+    }
+    
+    // Start confetti animation
+    function startConfetti() {
+        const canvas = confettiCanvas;
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Particles array
+        const particles = [];
+        const particleCount = 200;
+        
+        // Colors array
+        const colors = [
+            '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
+            '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50',
+            '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800',
+            '#FF5722', '#795548', '#9E9E9E', '#607D8B', '#FFFFFF'
+        ];
+        
+        // Create particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 10 + 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: Math.random() * 3 + 2,
+                angle: Math.random() * Math.PI * 2,
+                spin: Math.random() * 0.2 - 0.1,
+                fall: Math.random() > 0.5
+            });
+        }
+        
+        // Animation function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw particles
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                
+                ctx.beginPath();
+                ctx.fillStyle = p.color;
+                
+                if (p.fall) {
+                    // Falling confetti
+                    p.angle += p.spin;
+                    p.y += p.speed;
+                    p.x += Math.sin(p.angle) * 2;
+                    
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x + p.size * Math.cos(p.angle), p.y + p.size * Math.sin(p.angle));
+                    ctx.lineTo(p.x + p.size * Math.cos(p.angle + Math.PI/2), p.y + p.size * Math.sin(p.angle + Math.PI/2));
+                    ctx.lineTo(p.x + p.size * Math.cos(p.angle + Math.PI), p.y + p.size * Math.sin(p.angle + Math.PI));
+                    ctx.lineTo(p.x + p.size * Math.cos(p.angle + Math.PI*3/2), p.y + p.size * Math.sin(p.angle + Math.PI*3/2));
+                } else {
+                    // Floating confetti
+                    p.angle += p.spin;
+                    p.y += p.speed * 0.5;
+                    p.x += Math.sin(p.angle) * 3;
+                    
+                    ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                }
+                
+                ctx.closePath();
+                ctx.fill();
+                
+                // Reset particles when they fall off screen
+                if (p.y > canvas.height) {
+                    p.y = -p.size;
+                    p.x = Math.random() * canvas.width;
+                }
+            }
+            
+            requestAnimationFrame(draw);
+        }
+        
+        // Start animation
+        draw();
+        
+        // Stop after 8 seconds
+        setTimeout(() => {
+            canvas.width = 0;
+            canvas.height = 0;
+        }, 8000);
     }
 });
