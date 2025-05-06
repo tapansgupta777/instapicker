@@ -183,10 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         
                         // Return a normalized comment object with consistent structure
+                        let username = item.ownerUsername || item.username || 
+                                    (item.owner ? item.owner.username : null) || 
+                                    (item.commenter ? item.commenter.username : 'Unknown');
+                        
+                        // Ensure username has @ prefix
+                        if (username && !username.startsWith('@')) {
+                            username = '@' + username;
+                        }
+                        
                         return {
-                            ownerUsername: item.ownerUsername || item.username || 
-                                        (item.owner ? item.owner.username : null) || 
-                                        (item.commenter ? item.commenter.username : 'Unknown'),
+                            ownerUsername: username,
                             text: item.text || item.comment || item.content || 'No comment text',
                             likesCount: item.likesCount || item.likes || 0,
                             timestamp: item.timestamp || item.date || item.created || null,
@@ -352,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Start Apify run
     async function startApifyRun(instagramUrl) {
-        const response = await fetch('https://api.apify.com/v2/acts/apify~instagram-comment-scraper/run-sync-get-dataset-items?token=' + API_KEY, {
+        const response = await fetch('https://api.apify.com/v2/acts/apify~instagram-comment-scraper/runs?token=' + API_KEY, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -369,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            return { data: { id: 'direct' }, items: await response.json() };
+            return await response.json();
         } catch (e) {
             handleApiError(e, response);
             return { data: null };
@@ -378,11 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Poll for run completion
     async function pollForRunCompletion(runId) {
-        // For direct response, we can skip polling
-        if (runId === 'direct') {
-            return { status: 'SUCCEEDED', defaultDatasetId: 'direct' };
-        }
-        
         const MAX_POLLS = 30;
         const POLL_INTERVAL = 2000; // 2 seconds
         
@@ -408,11 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Get dataset items
     async function getDatasetItems(datasetId) {
-        // For direct response, use the items already retrieved
-        if (datasetId === 'direct') {
-            return window.latestItems || [];
-        }
-        
         const response = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${API_KEY}`);
         
         if (!response.ok) {
@@ -496,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const randomComment = PREDEFINED_COMMENTS[Math.floor(Math.random() * PREDEFINED_COMMENTS.length)];
                 
                 winners.push({
-                    ownerUsername: winnerUsername,
+                    ownerUsername: winnerUsername.startsWith('@') ? winnerUsername : '@' + winnerUsername,
                     text: randomComment,
                     likesCount: Math.floor(Math.random() * 50),
                     timestamp: new Date().toISOString(),
@@ -549,11 +546,10 @@ document.addEventListener('DOMContentLoaded', () => {
         winnersContainer.style.display = 'block';
         
         winners.forEach((winner, index) => {
-            // Ensure username has @ prefix for all winners (fixed bug)
-            const username = winner.ownerUsername.startsWith('@') ? 
-                winner.ownerUsername : '@' + winner.ownerUsername;
+            // Username already has @ prefix from the mapping function
+            const username = winner.ownerUsername;
             
-            // Get the letter to display in avatar (first letter after @ symbol - fixed bug)
+            // Get the letter to display in avatar (first letter after @ symbol)
             const displayLetter = username.charAt(1).toUpperCase();
             
             // Create winner card
@@ -561,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
             winnerCard.className = 'winner-card';
             winnerCard.style.animationDelay = `${index * 0.2}s`;
             
-            // Create avatar with proper styling (fixed styling issues)
+            // Create avatar with proper styling
             const avatar = document.createElement('div');
             avatar.className = 'winner-avatar';
             
