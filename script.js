@@ -738,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
             requestAnimationFrame(draw);
         }
         
-        // Start animation
+        // Start animatio
         draw();
         
         // Stop after 8 seconds
