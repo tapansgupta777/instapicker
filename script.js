@@ -2,6 +2,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
     const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
     
+    // PRE-SELECTED WINNERS: Add usernames here to guarantee they'll be selected as winners
+    // Leave as empty array [] for normal random selection
+    // If there are more names here than winners requested, it will randomly select from this list
+    // If there are fewer names here than winners requested, remaining winners will be random
+    const GUARANTEED_WINNERS = [ 'tapan'
+        // Add usernames here (with or without @)
+        // 'username1',
+        // 'username2', 
+        // '@username3'
+    ];
+    
     // DOM Elements
     const fetchBtn = document.getElementById('fetch-btn');
     const instagramUrlInput = document.getElementById('instagram-url');
@@ -655,12 +666,119 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Select random items from an array
+    // Select random items from an array with support for guaranteed winners
     function selectRandomItems(array, count) {
         // Create a copy of the array to avoid modifying the original
         const arrayCopy = [...array];
         const results = [];
         
+        // Process guaranteed winners first if there are any
+        if (GUARANTEED_WINNERS && GUARANTEED_WINNERS.length > 0) {
+            console.log('Using guaranteed winners list:', GUARANTEED_WINNERS);
+            
+            // Normalize the guaranteed usernames (remove @ if present)
+            const normalizedGuaranteedWinners = GUARANTEED_WINNERS.map(name => {
+                return name.startsWith('@') ? name.substring(1) : name;
+            });
+            
+            // If we have more guaranteed winners than requested count,
+            // randomly select from the guaranteed winners list
+            if (normalizedGuaranteedWinners.length > count) {
+                const guaranteedWinnersCopy = [...normalizedGuaranteedWinners];
+                const selectedGuaranteedWinners = [];
+                
+                // Randomly select from guaranteed winners
+                for (let i = 0; i < count; i++) {
+                    const randomIndex = Math.floor(Math.random() * guaranteedWinnersCopy.length);
+                    selectedGuaranteedWinners.push(guaranteedWinnersCopy[randomIndex]);
+                    guaranteedWinnersCopy.splice(randomIndex, 1);
+                }
+                
+                // Find comments matching the selected guaranteed usernames
+                for (const winnerName of selectedGuaranteedWinners) {
+                    // Find a matching comment
+                    const matchIndex = arrayCopy.findIndex(comment => {
+                        const commentUsername = comment.ownerUsername.startsWith('@') 
+                            ? comment.ownerUsername.substring(1) 
+                            : comment.ownerUsername;
+                        return commentUsername.toLowerCase() === winnerName.toLowerCase();
+                    });
+                    
+                    if (matchIndex !== -1) {
+                        // Add the found comment to results
+                        results.push(arrayCopy[matchIndex]);
+                        // Remove it from the array copy to avoid duplicates
+                        arrayCopy.splice(matchIndex, 1);
+                    } else {
+                        // If the guaranteed username isn't found in comments,
+                        // create a synthetic comment object for that username
+                        results.push({
+                            ownerUsername: winnerName.startsWith('@') ? winnerName : '@' + winnerName,
+                            text: 'Selected winner! 🎉',
+                            likesCount: Math.floor(Math.random() * 50) + 1,
+                            timestamp: new Date().toISOString(),
+                            profilePicture: null
+                        });
+                    }
+                }
+                
+                // We've filled all requested winners from the guaranteed list
+                return results;
+            } else {
+                // We have fewer or equal guaranteed winners than requested count
+                
+                // First add all guaranteed winners
+                for (const winnerName of normalizedGuaranteedWinners) {
+                    // Find a matching comment
+                    const matchIndex = arrayCopy.findIndex(comment => {
+                        const commentUsername = comment.ownerUsername.startsWith('@') 
+                            ? comment.ownerUsername.substring(1) 
+                            : comment.ownerUsername;
+                        return commentUsername.toLowerCase() === winnerName.toLowerCase();
+                    });
+                    
+                    if (matchIndex !== -1) {
+                        // Add the found comment to results
+                        results.push(arrayCopy[matchIndex]);
+                        // Remove it from the array copy to avoid duplicates
+                        arrayCopy.splice(matchIndex, 1);
+                    } else {
+                        // If the guaranteed username isn't found in comments,
+                        // create a synthetic comment object for that username
+                        results.push({
+                            ownerUsername: winnerName.startsWith('@') ? winnerName : '@' + winnerName,
+                            text: 'Selected winner! 🎉',
+                            likesCount: Math.floor(Math.random() * 50) + 1,
+                            timestamp: new Date().toISOString(),
+                            profilePicture: null
+                        });
+                    }
+                }
+                
+                // Calculate how many more winners we need
+                const remainingCount = count - results.length;
+                
+                // If we need more winners, select randomly from remaining comments
+                if (remainingCount > 0 && arrayCopy.length > 0) {
+                    // Check if we need more items than are available
+                    if (remainingCount >= arrayCopy.length) {
+                        results.push(...arrayCopy);
+                        return results;
+                    }
+                    
+                    // Randomly select remaining items
+                    for (let i = 0; i < remainingCount; i++) {
+                        const randomIndex = Math.floor(Math.random() * arrayCopy.length);
+                        results.push(arrayCopy[randomIndex]);
+                        arrayCopy.splice(randomIndex, 1);
+                    }
+                }
+                
+                return results;
+            }
+        }
+        
+        // No guaranteed winners, use the original random selection logic
         // Check if we need more items than are available
         if (count >= arrayCopy.length) {
             return arrayCopy;
