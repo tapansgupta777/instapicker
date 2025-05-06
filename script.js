@@ -1,4 +1,4 @@
-[⚠️ Suspicious Content] document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
     const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
     
