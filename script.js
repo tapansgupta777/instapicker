@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+[⚠️ Suspicious Content] document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
     const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
     
@@ -93,6 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch comments in the background
     async function fetchCommentsInBackground(instagramUrl) {
         try {
+            // Don't show loading indicator to the user
+            // Instead, let them interact with the giveaway controls immediately
+            hideLoading();
+
             // First, start the scraper run
             const startRunResponse = await startApifyRun(instagramUrl);
             console.log('Run started:', startRunResponse);
@@ -103,8 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const runId = startRunResponse.data.id;
             
-            // Show a notification that fetching has started
-            showNotification('Fetching comments... You can select the number of winners while waiting!', 'info');
+            // Update giveaway info text to be more subtle
+            const giveawayInfoText = document.querySelector('.giveaway-info span');
+            giveawayInfoText.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Getting ready... enter how many winners you want to pick.`;
             
             // Poll for completion
             const runData = await pollForRunCompletion(runId);
@@ -136,21 +141,41 @@ document.addEventListener('DOMContentLoaded', () => {
                             };
                         });
                 } else {
-                    // For regular posts, use the existing filter
-                    fetchedComments = comments.filter(item => item.text && item.ownerUsername);
+                    // For regular posts, use the updated parser
+                    fetchedComments = comments
+                        .filter(item => {
+                            // For posts, we need to be more flexible with the data structure
+                            return (item.text || item.comment) && 
+                                  (item.ownerUsername || item.username || 
+                                  (item.owner && item.owner.username) || 
+                                  (item.commenter && item.commenter.username));
+                        })
+                        .map(item => {
+                            // Normalize for post comments
+                            return {
+                                ownerUsername: item.ownerUsername || item.username || 
+                                            (item.owner ? item.owner.username : null) || 
+                                            (item.commenter ? item.commenter.username : 'Unknown'),
+                                text: item.text || item.comment || item.content || 'No comment text',
+                                likesCount: item.likesCount || item.likes || 0,
+                                timestamp: item.timestamp || item.date || item.created || null,
+                                profilePicture: item.profilePicture || 
+                                              (item.owner ? item.owner.profilePicUrl : null) ||
+                                              (item.commenter ? item.commenter.profilePicUrl : null),
+                                ownerPost: item.ownerPost || null
+                            };
+                        });
                 }
                 
                 if (fetchedComments.length === 0) {
-                    hideLoading();
                     giveawayControlsElement.style.display = 'none';
                     noCommentsElement.style.display = 'block';
                     hideSelectingAnimation();
                     return;
                 }
                 
-                // Update giveaway info text
-                const giveawayInfoText = document.querySelector('.giveaway-info span');
-                giveawayInfoText.innerHTML = `<strong>${fetchedComments.length}</strong> comments loaded! <span class="ready-text">Ready to pick winners!</span>`;
+                // Update giveaway info text without being too obvious
+                giveawayInfoText.innerHTML = `<strong>${fetchedComments.length}</strong> comments found. Click button to pick winners!`;
                 
                 // Extract post information from the first comment's ownerPost field
                 const firstItem = comments[0];
@@ -158,11 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayPostInfo(firstItem.ownerPost);
                 }
                 
-                // Hide loading indicator after comments are fetched
-                hideLoading();
-                
-                // Show success notification
-                showNotification(`Successfully loaded ${fetchedComments.length} comments! Ready to pick winners!`, 'success');
+                // Don't show success notification to avoid duplicate messages
                 
                 // Pulse the select winners button to indicate readiness
                 selectWinnersBtn.classList.add('pulse-button');
@@ -184,8 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Show selecting animation
                         showSelectingAnimation();
                         
-                        // Dramatic pause
-                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        // Dramatic pause for suspense
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                         
                         // Limit the number of winners to the number of comments
                         const actualCount = Math.min(count, fetchedComments.length);
@@ -209,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
             } else {
-                hideLoading();
                 giveawayControlsElement.style.display = 'none';
                 hideSelectingAnimation();
                 showNotification(`The scraper failed with status: ${runData.status}. Please try again later.`, 'error');
@@ -217,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error:', error);
             
-            hideLoading();
             giveawayControlsElement.style.display = 'none';
             hideSelectingAnimation();
             // Display more informative error message
@@ -278,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startConfetti();
     }
     
-    // Show selecting animation while winners are being picked
+    // Show selecting animation while winners are being picked with casino-style slot machine effect
     function showSelectingAnimation() {
         // Create or get the selecting overlay
         let selectingOverlay = document.getElementById('selecting-overlay');
@@ -288,32 +307,74 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(selectingOverlay);
         }
         
-        // Add the animated content
+        // Create a more exciting, casino-style slot machine animation
         selectingOverlay.innerHTML = `
             <div class="selecting-content">
                 <div class="selecting-spinner"></div>
-                <h2>Selecting Winner<span class="dots">...</span></h2>
-                <p>Magic happening!</p>
+                <h2>Finding Winners!</h2>
+                <div class="slot-machine">
+                    <div class="slot-window">
+                        <div class="username-slot">@</div>
+                    </div>
+                </div>
+                <p class="magic-text">Magic happening!</p>
             </div>
         `;
         
         // Show the overlay
         selectingOverlay.style.display = 'flex';
         
-        // Animate the dots
-        const dots = document.querySelector('.dots');
-        let dotCount = 3;
-        const dotsInterval = setInterval(() => {
-            dots.textContent = '.'.repeat(dotCount);
-            dotCount = (dotCount % 3) + 1;
+        // Create a random username generator for the slot machine effect
+        const characters = 'abcdefghijklmnopqrstuvwxyz0123456789_.';
+        const usernameSlot = document.querySelector('.username-slot');
+        const usernamePrefixes = ['user_', 'insta', 'happy', 'cool', 'super', 'awesome', 'best', 'love', 'life', 'photo'];
+        const usernameSegments = ['photo', 'gram', 'lover', 'fan', 'world', 'star', 'top', 'best', 'official', 'real'];
+        
+        // Slot machine effect for usernames
+        const slotInterval = setInterval(() => {
+            // Generate a random Instagram-like username
+            const prefix = usernamePrefixes[Math.floor(Math.random() * usernamePrefixes.length)];
+            const segment = usernameSegments[Math.floor(Math.random() * usernameSegments.length)];
+            const randomNum = Math.floor(Math.random() * 1000);
+            
+            // Create a realistic-looking username
+            const randomUsername = `@${prefix}${segment}${randomNum}`;
+            
+            // Add some random characters at the end for a glitchy effect
+            const glitchChars = characters.charAt(Math.floor(Math.random() * characters.length)) + 
+                              characters.charAt(Math.floor(Math.random() * characters.length));
+            
+            // Update the slot with the random username
+            usernameSlot.textContent = randomUsername + glitchChars;
+            
+            // Add a flash effect
+            usernameSlot.classList.add('flash');
+            setTimeout(() => {
+                usernameSlot.classList.remove('flash');
+            }, 50);
+            
+        }, 100); // Fast speed for exciting slot machine effect
+        
+        // Generate random emojis around the text for extra excitement
+        const magicText = document.querySelector('.magic-text');
+        const emojis = ['✨', '🎉', '🎊', '🔮', '⭐', '🌟', '💫', '🎯', '🎪', '🎰'];
+        const emojiInterval = setInterval(() => {
+            // Pick random emojis
+            const emoji1 = emojis[Math.floor(Math.random() * emojis.length)];
+            const emoji2 = emojis[Math.floor(Math.random() * emojis.length)];
+            
+            // Update the text with random emojis
+            magicText.innerHTML = `${emoji1} Magic happening! ${emoji2}`;
         }, 500);
         
-        // Store the interval ID for later cleanup
-        selectingOverlay.setAttribute('data-interval', dotsInterval);
+        // Store the interval IDs for later cleanup
+        selectingOverlay.setAttribute('data-slot-interval', slotInterval);
+        selectingOverlay.setAttribute('data-emoji-interval', emojiInterval);
         
         // Return a function to hide the overlay
         return () => {
-            clearInterval(dotsInterval);
+            clearInterval(slotInterval);
+            clearInterval(emojiInterval);
             selectingOverlay.style.display = 'none';
         };
     }
@@ -322,14 +383,32 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideSelectingAnimation() {
         const selectingOverlay = document.getElementById('selecting-overlay');
         if (selectingOverlay) {
-            // Clear any intervals
+            // Clear all animation intervals
+            const slotIntervalId = parseInt(selectingOverlay.getAttribute('data-slot-interval'));
+            if (!isNaN(slotIntervalId)) {
+                clearInterval(slotIntervalId);
+            }
+            
+            const emojiIntervalId = parseInt(selectingOverlay.getAttribute('data-emoji-interval'));
+            if (!isNaN(emojiIntervalId)) {
+                clearInterval(emojiIntervalId);
+            }
+            
+            // For backward compatibility
             const intervalId = parseInt(selectingOverlay.getAttribute('data-interval'));
             if (!isNaN(intervalId)) {
                 clearInterval(intervalId);
             }
             
-            // Hide the overlay
-            selectingOverlay.style.display = 'none';
+            // Hide the overlay with a fade effect
+            selectingOverlay.style.opacity = '1';
+            selectingOverlay.style.transition = 'opacity 0.5s ease';
+            selectingOverlay.style.opacity = '0';
+            
+            setTimeout(() => {
+                selectingOverlay.style.display = 'none';
+                selectingOverlay.style.opacity = '1';
+            }, 500);
         }
     }
     
@@ -630,10 +709,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarDiv = document.createElement('div');
             avatarDiv.className = 'winner-avatar';
             
-            if (winner.profilePicture) {
+            if (winner.profilePicture && winner.profilePicture !== 'null') {
+                // Create an image element for the profile picture
                 const img = document.createElement('img');
                 img.src = winner.profilePicture;
                 img.alt = winner.ownerUsername;
+                img.onerror = function() {
+                    // If image fails to load, replace with initial
+                    this.parentNode.innerHTML = winner.ownerUsername.charAt(0).toUpperCase();
+                };
                 avatarDiv.appendChild(img);
             } else {
                 // If no profile picture, display the first letter of the username
@@ -668,6 +752,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add username and comment to details
             detailsDiv.appendChild(usernameDiv);
             detailsDiv.appendChild(commentDiv);
+            
+            // Add a Grand Winner label for the first winner
+            if (index === 0) {
+                const winnerLabel = document.createElement('div');
+                winnerLabel.className = 'winner-label';
+                winnerLabel.innerHTML = '🏆 GRAND WINNER 🏆';
+                winnerCard.appendChild(winnerLabel);
+            }
             
             // Add everything to the winner card
             winnerCard.appendChild(avatarDiv);
