@@ -1,4 +1,4 @@
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
     const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
     
@@ -121,51 +121,51 @@
                 const comments = await getDatasetItems(datasetId);
                 
                 // Store comments for winner selection
-                // Filter out any non-comment objects that might be in the data
-                if (instagramUrl.includes('/reel/')) {
-                    // For reels, the data structure might be different
-                    fetchedComments = comments
-                        .filter(item => {
-                            // Check for different data formats that might come from the reel scraper
-                            return (item.text || item.comment) && (item.ownerUsername || item.username || (item.owner && item.owner.username));
-                        })
-                        .map(item => {
-                            // Normalize the comment object structure
-                            return {
-                                ownerUsername: item.ownerUsername || item.username || (item.owner ? item.owner.username : 'Unknown'),
-                                text: item.text || item.comment || 'No comment text',
-                                likesCount: item.likesCount || item.likes || 0,
-                                timestamp: item.timestamp || item.date || null,
-                                profilePicture: item.profilePicture || (item.owner ? item.owner.profilePicUrl : null),
-                                ownerPost: item.ownerPost || null
-                            };
-                        });
-                } else {
-                    // For regular posts, use the updated parser
-                    fetchedComments = comments
-                        .filter(item => {
-                            // For posts, we need to be more flexible with the data structure
-                            return (item.text || item.comment) && 
-                                  (item.ownerUsername || item.username || 
-                                  (item.owner && item.owner.username) || 
-                                  (item.commenter && item.commenter.username));
-                        })
-                        .map(item => {
-                            // Normalize for post comments
-                            return {
-                                ownerUsername: item.ownerUsername || item.username || 
-                                            (item.owner ? item.owner.username : null) || 
-                                            (item.commenter ? item.commenter.username : 'Unknown'),
-                                text: item.text || item.comment || item.content || 'No comment text',
-                                likesCount: item.likesCount || item.likes || 0,
-                                timestamp: item.timestamp || item.date || item.created || null,
-                                profilePicture: item.profilePicture || 
-                                              (item.owner ? item.owner.profilePicUrl : null) ||
-                                              (item.commenter ? item.commenter.profilePicUrl : null),
-                                ownerPost: item.ownerPost || null
-                            };
-                        });
-                }
+                // Use a universal parser for both reels and posts
+                fetchedComments = comments
+                    .filter(item => {
+                        // Keep only items that have at least username and text
+                        const hasUsername = item.ownerUsername || item.username || 
+                                        (item.owner && item.owner.username) || 
+                                        (item.commenter && item.commenter.username);
+                        const hasText = item.text || item.comment || item.content;
+                        return hasUsername && hasText;
+                    })
+                    .map(item => {
+                        // Process profile picture with careful validation
+                        let profilePic = null;
+                        
+                        // Try to get the profile picture from various possible locations
+                        if (item.profilePicture && typeof item.profilePicture === 'string' && 
+                            item.profilePicture.startsWith('http')) {
+                            profilePic = item.profilePicture;
+                        } else if (item.owner && item.owner.profilePicUrl && 
+                                typeof item.owner.profilePicUrl === 'string' && 
+                                item.owner.profilePicUrl.startsWith('http')) {
+                            profilePic = item.owner.profilePicUrl;
+                        } else if (item.commenter && item.commenter.profilePicUrl && 
+                                typeof item.commenter.profilePicUrl === 'string' && 
+                                item.commenter.profilePicUrl.startsWith('http')) {
+                            profilePic = item.commenter.profilePicUrl;
+                        }
+                        
+                        // Clean up any null or undefined string values
+                        if (profilePic === 'null' || profilePic === 'undefined') {
+                            profilePic = null;
+                        }
+                        
+                        // Return a normalized comment object with consistent structure
+                        return {
+                            ownerUsername: item.ownerUsername || item.username || 
+                                        (item.owner ? item.owner.username : null) || 
+                                        (item.commenter ? item.commenter.username : 'Unknown'),
+                            text: item.text || item.comment || item.content || 'No comment text',
+                            likesCount: item.likesCount || item.likes || 0,
+                            timestamp: item.timestamp || item.date || item.created || null,
+                            profilePicture: profilePic,
+                            ownerPost: item.ownerPost || null
+                        };
+                    });
                 
                 if (fetchedComments.length === 0) {
                     giveawayControlsElement.style.display = 'none';
@@ -174,8 +174,8 @@
                     return;
                 }
                 
-                // Update giveaway info text without being too obvious
-                giveawayInfoText.innerHTML = `<strong>${fetchedComments.length}</strong> comments found. Click button to pick winners!`;
+                // Keep the giveaway info text clean and simple - no mention of comments counts
+                giveawayInfoText.innerHTML = `Ready to pick winners!`;
                 
                 // Extract post information from the first comment's ownerPost field
                 const firstItem = comments[0];
@@ -205,8 +205,7 @@
                         // Show selecting animation
                         showSelectingAnimation();
                         
-                        // Dramatic pause for suspense
-                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        // No dramatic pause as per user request
                         
                         // Limit the number of winners to the number of comments
                         const actualCount = Math.min(count, fetchedComments.length);
@@ -281,8 +280,7 @@
         // Limit the number of winners to the number of comments
         const actualCount = Math.min(count, fetchedComments.length);
         
-        // Delay for dramatic effect
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // No delay as per user request
         
         // Select random winners
         const winners = selectRandomItems(fetchedComments, actualCount);
@@ -405,10 +403,9 @@
             selectingOverlay.style.transition = 'opacity 0.5s ease';
             selectingOverlay.style.opacity = '0';
             
-            setTimeout(() => {
-                selectingOverlay.style.display = 'none';
-                selectingOverlay.style.opacity = '1';
-            }, 500);
+            // Immediately hide the overlay without transition delay
+            selectingOverlay.style.display = 'none';
+            selectingOverlay.style.opacity = '1';
         }
     }
     
@@ -450,29 +447,19 @@
 
     // Start the Apify scraper run
     async function startApifyRun(instagramUrl) {
-        // Determine if it's a post or reel URL
-        const scraper = instagramUrl.includes('/reel/') 
-            ? 'apify~instagram-scraper' // Use the general scraper for reels
-            : 'apify~instagram-comment-scraper'; // Use the comment-specific scraper for posts
+        // Use a single scraper for both post and reel URLs for better compatibility
+        const scraper = 'apify~instagram-scraper';
     
-        // Configure the body based on the URL type
-        let body;
-        if (instagramUrl.includes('/reel/')) {
-            body = JSON.stringify({
-                "directUrls": [instagramUrl],
-                "resultsType": "comments",
-                "resultsLimit": 100,
-                "maxRequestRetries": 5,
-                "proxy": {
-                    "useApifyProxy": true
-                }
-            });
-        } else {
-            body = JSON.stringify({
-                "startUrls": [{ "url": instagramUrl }],
-                "resultsLimit": 100,
-            });
-        }
+        // Configure the body to work with both posts and reels
+        const body = JSON.stringify({
+            "directUrls": [instagramUrl],
+            "resultsType": "comments",
+            "resultsLimit": 300,
+            "maxRequestRetries": 5,
+            "proxy": {
+                "useApifyProxy": true
+            }
+        });
         
         const response = await fetch(`https://api.apify.com/v2/acts/${scraper}/runs?token=${API_KEY}`, {
             method: 'POST',
@@ -585,14 +572,18 @@
         const commentDiv = document.createElement('div');
         commentDiv.className = 'comment';
         
-        // Avatar section
+        // Avatar section with improved image handling
         const avatarDiv = document.createElement('div');
         avatarDiv.className = 'comment-avatar';
         
-        if (comment.profilePicture) {
+        if (comment.profilePicture && typeof comment.profilePicture === 'string' && comment.profilePicture.startsWith('http')) {
             const img = document.createElement('img');
             img.src = comment.profilePicture;
             img.alt = comment.ownerUsername;
+            img.onerror = function() {
+                // If image fails to load, replace with initial
+                this.parentNode.textContent = comment.ownerUsername.charAt(0).toUpperCase();
+            };
             avatarDiv.appendChild(img);
         } else {
             // If no profile picture, display the first letter of the username
@@ -709,8 +700,9 @@
             const avatarDiv = document.createElement('div');
             avatarDiv.className = 'winner-avatar';
             
-            if (winner.profilePicture && winner.profilePicture !== 'null') {
-                // Create an image element for the profile picture
+            if (winner.profilePicture && typeof winner.profilePicture === 'string' && 
+                winner.profilePicture.startsWith('http') && winner.profilePicture !== 'null') {
+                // Create an image element for the profile picture with strict validation
                 const img = document.createElement('img');
                 img.src = winner.profilePicture;
                 img.alt = winner.ownerUsername;
@@ -718,6 +710,15 @@
                     // If image fails to load, replace with initial
                     this.parentNode.innerHTML = winner.ownerUsername.charAt(0).toUpperCase();
                 };
+                img.onload = function() {
+                    // Add a subtle zoom effect when image loads successfully
+                    this.style.transform = 'scale(1)';
+                    this.style.opacity = '1';
+                };
+                // Start with a subtle animation
+                img.style.transform = 'scale(0.9)';
+                img.style.opacity = '0.9';
+                img.style.transition = 'all 0.3s ease';
                 avatarDiv.appendChild(img);
             } else {
                 // If no profile picture, display the first letter of the username
@@ -753,13 +754,7 @@
             detailsDiv.appendChild(usernameDiv);
             detailsDiv.appendChild(commentDiv);
             
-            // Add a Grand Winner label for the first winner
-            if (index === 0) {
-                const winnerLabel = document.createElement('div');
-                winnerLabel.className = 'winner-label';
-                winnerLabel.innerHTML = '🏆 GRAND WINNER 🏆';
-                winnerCard.appendChild(winnerLabel);
-            }
+            // No winner label as per user request
             
             // Add everything to the winner card
             winnerCard.appendChild(avatarDiv);
