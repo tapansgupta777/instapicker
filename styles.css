@@ -20,7 +20,7 @@
     --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     --border-radius: 8px;
     --transition: all 0.3s ease;
-    --gold-gradient: linear-gradient(135deg, #fff9c4, #ffd700, #ffcc00, #ffd700);
+    --gold-gradient: radial-gradient(circle at center, #ffffff, #ffd700, #ffa500);
 }
 
 body {
@@ -210,7 +210,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
     color: white;
     font-family: 'Arial Black', Gadget, sans-serif;
@@ -218,6 +218,15 @@ button:disabled {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     text-transform: uppercase;
     letter-spacing: -1px;
+    text-align: center;
+    line-height: 1;
+    animation: commentGoldGlow 3s infinite alternate;
+}
+
+@keyframes commentGoldGlow {
+    0% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); }
+    100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
 }
 
 .comment-avatar img {
@@ -482,7 +491,6 @@ button:disabled {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* Updated winner avatar styling */
 .winner-avatar {
     width: 80px;
     height: 80px;
@@ -506,6 +514,16 @@ button:disabled {
 @keyframes pulse-glow {
     0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
     50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.9); }
+}
+
+.winner-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.winner-content {
+    flex: 1;
 }
 
 .winner-name {
