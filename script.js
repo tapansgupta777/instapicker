@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // API key for Apify - hardcoded for simplicity in this demo
     const API_KEY = 'apify_api_kizrZrYx87YfMJ1ULhzCj8Mb4tpAsq3csYQV';
 
-    // PRE-SELECTED WINNERS: Add usernames here to guarantee they'll be selected as winners
+    // PRE-SELECTED WINNERS: Add usernames here to guarantee they'll be selected as winner
     // Leave as empty array [] for normal random selection
     // If there are more names here than winners requested, it will randomly select from this list
     // If there are fewer names here than winners requested, remaining winners will be random
